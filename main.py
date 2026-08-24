@@ -73,17 +73,27 @@ def create_task(task: TaskInput):
 
 @app.put("/tasks/{task_id}")
 def update_task(task_id: int, task: TaskInput):
-    for i in tasks:
-        if i["id"] == task_id:
-            i["title"] = task.title
-            i["done"] = task.done
-            return i
-    raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+    row = cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+
+    if not task.title or not task.title.strip():
+        raise HTTPException(status_code=400, detail="Title is required")
+
+    cursor.execute("UPDATE tasks SET title = ?, done = ? WHERE id = ?", (task.title, int(task.done), task_id))
+    conn.commit()
+
+    return {"id": task_id, "title": task.title, "done": task.done}
 
 @app.delete("/tasks/{task_id}")
 def delete_task(task_id: int):
-    for i in tasks:
-        if i["id"] == task_id:
-            tasks.remove(i)
-            return {"message": f"Task {task_id} deleted"}
-    raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+    row = cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+
+    cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    conn.commit()
+
+    return {"message": f"Task {task_id} deleted"}
