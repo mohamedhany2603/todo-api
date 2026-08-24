@@ -45,13 +45,19 @@ def check_health():
 
 @app.get("/tasks")
 def get_tasks():
-    return tasks
+    cursor.execute("SELECT * FROM tasks")
+    rows = cursor.fetchall()
+    result = []
+    for r in rows:
+        result.append({"id": r[0], "title": r[1], "done": bool(r[2])})
+    return result
 
 @app.get("/tasks/{task_id}")
 def get_task(task_id: int):
-    for i in tasks:
-        if i["id"] == task_id:
-            return i
+    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+    row = cursor.fetchone()
+    if row:
+        return {"id": row[0], "title": row[1], "done": bool(row[2])}
     raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
 
 @app.post("/tasks", status_code=201)
