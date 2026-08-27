@@ -66,4 +66,8 @@ UPDATE tasks SET done = 1;
 
 ## Swagger UI
 
+<<<<<<< HEAD
 ![Swagger screenshot](swagger.png)
+=======
+![Swagger screenshot](swagger.png)
+>>>>>>> e2a021e71de63f62506d12d3ba4ad275b1b1d615
