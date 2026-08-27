@@ -1,6 +1,10 @@
-import sqlite3
+import os
+import psycopg
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+
+load_dotenv()
 
 class TaskInput(BaseModel):
     title: str
@@ -8,14 +12,15 @@ class TaskInput(BaseModel):
 
 app = FastAPI()
 
-conn = sqlite3.connect("tasks.db", check_same_thread=False)
+DATABASE_URL = os.getenv("DATABASE_URL")
+conn = psycopg.connect(DATABASE_URL)
 cursor = conn.cursor()
 
 cursor.execute("""
     CREATE TABLE IF NOT EXISTS tasks (
-        id INTEGER PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         title TEXT,
-        done INTEGER
+        done BOOLEAN
     )
 """)
 conn.commit()
@@ -24,15 +29,15 @@ cursor.execute("SELECT COUNT(*) FROM tasks")
 count = cursor.fetchone()[0]
 
 if count == 0:
-    cursor.execute("INSERT INTO tasks (title, done) VALUES (?, ?)", ("pray", 1))
-    cursor.execute("INSERT INTO tasks (title, done) VALUES (?, ?)", ("study", 1))
-    cursor.execute("INSERT INTO tasks (title, done) VALUES (?, ?)", ("play football", 0))
+    cursor.execute("INSERT INTO tasks (title, done) VALUES (%s, %s)", ("pray", True))
+    cursor.execute("INSERT INTO tasks (title, done) VALUES (%s, %s)", ("study", True))
+    cursor.execute("INSERT INTO tasks (title, done) VALUES (%s, %s)", ("play football", False))
     conn.commit()
 
 tasks = [
-    {"id": 1, "title": "pray", "done": True},
-    {"id": 2, "title": "study", "done": True},
-    {"id": 3, "title": "play football", "done": False}
+    {"id": 1, "title": "pray", "done": 1},
+    {"id": 2, "title": "study", "done": 1},
+    {"id": 3, "title": "play football", "done": 0}
 ]
 
 @app.get("/")
