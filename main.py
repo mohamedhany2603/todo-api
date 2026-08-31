@@ -1,7 +1,7 @@
 import os
 import psycopg
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
 
 load_dotenv()
@@ -70,15 +70,16 @@ def create_task(task: TaskInput):
     if not task.title or not task.title.strip():
         raise HTTPException(status_code=400, detail="Title is required")
 
-    cursor.execute("INSERT INTO tasks (title, done) VALUES (?, ?)", (task.title, 0))
+    cursor.execute("INSERT INTO tasks (title, done) VALUES (%s, %s) RETURNING id", (task.title, False))
+    new_id = cursor.fetchone()[0]
     conn.commit()
 
-    new_id = cursor.lastrowid
+    
     return {"id": new_id, "title": task.title, "done": False}
 
 @app.put("/tasks/{task_id}")
 def update_task(task_id: int, task: TaskInput):
-    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+    cursor.execute("SELECT * FROM tasks WHERE id = %s", (task_id,))
     row = cursor.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
@@ -86,19 +87,17 @@ def update_task(task_id: int, task: TaskInput):
     if not task.title or not task.title.strip():
         raise HTTPException(status_code=400, detail="Title is required")
 
-    cursor.execute("UPDATE tasks SET title = ?, done = ? WHERE id = ?", (task.title, int(task.done), task_id))
+    cursor.execute("UPDATE tasks SET title = %s, done = %s WHERE id = %s", (task.title, task.done, task_id))
     conn.commit()
 
     return {"id": task_id, "title": task.title, "done": task.done}
-
-@app.delete("/tasks/{task_id}")
+@app.delete("/tasks/{task_id}", status_code=204)
 def delete_task(task_id: int):
-    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+    cursor.execute("SELECT * FROM tasks WHERE id = %s", (task_id,))
     row = cursor.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
-
-    cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    cursor.execute("DELETE FROM tasks WHERE id = %s", (task_id,))
     conn.commit()
-
-    return {"message": f"Task {task_id} deleted"} 
+    return Response(status_code=204)
+    
