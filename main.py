@@ -59,7 +59,7 @@ def get_tasks():
 
 @app.get("/tasks/{task_id}")
 def get_task(task_id: int):
-    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+    cursor.execute("SELECT * FROM tasks WHERE id = %s", (task_id,))
     row = cursor.fetchone()
     if row:
         return {"id": row[0], "title": row[1], "done": bool(row[2])}
@@ -101,4 +101,4 @@ def delete_task(task_id: int):
     cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
     conn.commit()
 
-    return {"message": f"Task {task_id} deleted"}
+    return {"message": f"Task {task_id} deleted"} 
