@@ -4,3 +4,5 @@ tasks.db
 .env
 
 tasks.sqbpro
+
+update.json
